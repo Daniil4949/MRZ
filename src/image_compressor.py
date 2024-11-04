@@ -17,7 +17,7 @@ from src.image_processor import ImageProcessor
 
 class ImageCompressor:
     def __init__(self):
-        self.hidden_size = 50
+        self.hidden_size = 45
         self.max_error = 4000.0
         self.learning_rate = 0.017
         self.loader = ImageLoader()

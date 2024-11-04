@@ -10,8 +10,8 @@
 # https://habr.com/ru/articles/130581/
 
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 class ImageLoader:
@@ -20,27 +20,14 @@ class ImageLoader:
         image = mpimg.imread(filename)
         return (2.0 * image) - 1.0
 
-    @staticmethod
-    def display_image(img_array):
-        scaled_image = 1.0 * (img_array + 1) / 2
-        plt.axis('off')
-        plt.imshow(scaled_image)
-        plt.show()
 
+class ImageProcessor:
+    def __init__(self, block_height=4, block_width=4):
+        self.block_height = block_height
+        self.block_width = block_width
 
-class ImageCompressor:
-
-    def __init__(self):
-        self.hidden_size = 50
-        self.max_error = 4000.0
-        self.learning_rate = 0.017
-        self.block_height = 4
-        self.block_width = 4
-        self.input_size = self.block_height * self.block_width * 3
-        self.loader = ImageLoader()
-
-    def split_into_blocks(self, height, width):
-        img = self.loader.load_image()
+    def split_into_blocks(self, img):
+        height, width = img.shape[:2]
         blocks = []
         for i in range(height // self.block_height):
             for j in range(width // self.block_width):
@@ -76,10 +63,19 @@ class ImageCompressor:
         plt.imshow(scaled_image)
         plt.show()
 
-    @staticmethod
-    def load_image():
-        image = mpimg.imread("mountains.png")
-        return (2.0 * image) - 1.0
+
+class ImageCompressor:
+    def __init__(self):
+        self.hidden_size = 50
+        self.max_error = 4000.0
+        self.learning_rate = 0.017
+        self.loader = ImageLoader()
+        self.processor = ImageProcessor()
+
+        # Initialize dimensions based on default block size
+        self.block_height = self.processor.block_height
+        self.block_width = self.processor.block_width
+        self.input_size = self.block_height * self.block_width * 3
 
     def get_image_dimensions(self):
         img = self.loader.load_image()
@@ -151,8 +147,8 @@ class ImageCompressor:
         return np.sqrt(np.sum(vector ** 2))
 
     def generate_blocks(self):
-        height, width = self.get_image_dimensions()
-        return self.split_into_blocks(height, width).reshape(self.total_blocks(), 1, self.input_size)
+        img = self.loader.load_image()
+        return self.processor.split_into_blocks(img).reshape(self.total_blocks(), 1, self.input_size)
 
     def total_blocks(self):
         height, width = self.get_image_dimensions()
@@ -164,24 +160,19 @@ class ImageCompressor:
         original_image = self.loader.load_image()
         compressed_image = self.compress_and_reformat_blocks(layer1, layer2)
 
-        self.loader.display_image(original_image)
+        self.processor.display_image(original_image)
         height, width = self.get_image_dimensions()
-        self.loader.display_image(self.blocks_to_image_array(compressed_image, height, width))
+        self.processor.display_image(self.processor.blocks_to_image_array(compressed_image, height, width))
 
     def configure_block_parameters(self, block_height, block_width):
-        self.block_height = block_height
-        self.block_width = block_width
-        self.input_size = self.block_height * self.block_width * 3
+        self.processor.block_height = block_height
+        self.processor.block_width = block_width
+        self.input_size = self.processor.block_height * self.processor.block_width * 3
 
     def compress_and_reformat_blocks(self, layer1, layer2):
         compressed_blocks = [block @ layer1 @ layer2 for block in self.generate_blocks()]
         compressed_image = np.clip(np.array(compressed_blocks).reshape(self.total_blocks(), self.input_size), -1, 1)
         return compressed_image
-
-    def display_images(self, original_image, compressed_image):
-        self.display_image(original_image)
-        height, width = self.get_image_dimensions()
-        self.display_image(self.blocks_to_image_array(compressed_image, height, width))
 
 
 if __name__ == '__main__':

@@ -66,20 +66,21 @@ class ImageCompressor:
         return img.shape[0], img.shape[1]
 
     def initialize_layers(self):
-        layer1 = np.random.rand(self.INPUT_SIZE, self.HIDDEN_SIZE) * 2 - 1
+        layer1 = self.initialize_weights(self.INPUT_SIZE, self.HIDDEN_SIZE)
         layer2 = layer1.T
-
-        for weight_matrix1_row in range(len(layer1)):
-            for weight_matrix1_column in range(len(layer1[weight_matrix1_row])):
-                denominator1 = self.mod_of_vector(layer1.T[weight_matrix1_column])
-                layer1[weight_matrix1_row][weight_matrix1_column] /= denominator1
-
-        for weight_matrix2_row in range(len(layer2)):
-            for weight_matrix2_column in range(len(layer2[weight_matrix2_row])):
-                denominator2 = self.mod_of_vector(layer2.T[weight_matrix2_column])
-                layer2[weight_matrix2_row][weight_matrix2_column] /= denominator2
-
+        layer1 = self.normalize_layer(layer1)
+        layer2 = self.normalize_layer(layer2)
         return layer1, layer2
+
+    def initialize_weights(self, input_size, hidden_size):
+        return np.random.rand(input_size, hidden_size) * 2 - 1
+
+    def normalize_layer(self, layer):
+        for weight_matrix_row in range(len(layer)):
+            for weight_matrix_column in range(len(layer[weight_matrix_row])):
+                denominator = self.mod_of_vector(layer.T[weight_matrix_column])
+                layer[weight_matrix_row][weight_matrix_column] /= denominator
+        return layer
 
     def train_model(self):
         error = self.MAX_ERROR + 1

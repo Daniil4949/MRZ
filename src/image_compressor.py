@@ -114,11 +114,6 @@ class ImageCompressor:
         height, width = self.get_image_dimensions()
         self.processor.display_image(self.processor.blocks_to_image_array(compressed_image, height, width))
 
-    def configure_block_parameters(self, block_height, block_width):
-        self.processor.block_height = block_height
-        self.processor.block_width = block_width
-        self.input_size = self.processor.block_height * self.processor.block_width * 3
-
     def compress_and_reformat_blocks(self, first_layer, second_layer):
         compressed_blocks = [block @ first_layer @ second_layer for block in self.generate_blocks()]
         compressed_image = np.clip(np.array(compressed_blocks).reshape(self.total_blocks(), self.input_size), -1, 1)

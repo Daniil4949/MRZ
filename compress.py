@@ -15,19 +15,24 @@ from matplotlib import pyplot as plt
 
 
 class ImageCompressor:
-    HIDDEN_SIZE = 50
-    MAX_ERROR = 4000.0
-    LEARNING_RATE = 0.017
+
+    def __init__(self):
+        self.hidden_size = 50
+        self.max_error = 4000.0
+        self.learning_rate = 0.017
+        self.block_height = 4
+        self.block_width = 4
+        self.input_size = self.block_height * self.block_width * 3
 
     def split_into_blocks(self, height, width):
         img = self.load_image()
         blocks = []
-        for i in range(height // self.BLOCK_HEIGHT):
-            for j in range(width // self.BLOCK_WIDTH):
+        for i in range(height // self.block_height):
+            for j in range(width // self.block_width):
                 block = [
-                    img[i * self.BLOCK_HEIGHT + y, j * self.BLOCK_WIDTH + x, color]
-                    for y in range(self.BLOCK_HEIGHT)
-                    for x in range(self.BLOCK_WIDTH)
+                    img[i * self.block_height + y, j * self.block_width + x, color]
+                    for y in range(self.block_height)
+                    for x in range(self.block_width)
                     for color in range(3)
                 ]
                 blocks.append(block)
@@ -35,16 +40,16 @@ class ImageCompressor:
 
     def blocks_to_image_array(self, blocks, height, width):
         image_array = []
-        blocks_in_line = width // self.BLOCK_WIDTH
-        for i in range(height // self.BLOCK_HEIGHT):
-            for y in range(self.BLOCK_HEIGHT):
+        blocks_in_line = width // self.block_width
+        for i in range(height // self.block_height):
+            for y in range(self.block_height):
                 line = [
                     [
-                        blocks[i * blocks_in_line + j, (y * self.BLOCK_WIDTH * 3) + (x * 3) + color]
+                        blocks[i * blocks_in_line + j, (y * self.block_width * 3) + (x * 3) + color]
                         for color in range(3)
                     ]
                     for j in range(blocks_in_line)
-                    for x in range(self.BLOCK_WIDTH)
+                    for x in range(self.block_width)
                 ]
                 image_array.append(line)
         return np.array(image_array)
@@ -66,7 +71,7 @@ class ImageCompressor:
         return img.shape[0], img.shape[1]
 
     def initialize_layers(self):
-        layer1 = self.initialize_weights(self.INPUT_SIZE, self.HIDDEN_SIZE)
+        layer1 = self.initialize_weights(self.input_size, self.hidden_size)
         layer2 = layer1.T
         layer1 = self.normalize_layer(layer1)
         layer2 = self.normalize_layer(layer2)
@@ -84,12 +89,12 @@ class ImageCompressor:
         return layer
 
     def train_model(self):
-        error = self.MAX_ERROR + 1
+        error = self.max_error + 1
         epoch = 0
 
         layer1, layer2 = self.initialize_layers()
 
-        while error > self.MAX_ERROR:
+        while error > self.max_error:
             error = self.train_epoch(layer1, layer2)
             epoch += 1
             print(f'Epoch {epoch} - Error: {error}')
@@ -104,8 +109,8 @@ class ImageCompressor:
             hidden_layer = block @ layer1
             output_layer = hidden_layer @ layer2
             diff = output_layer - block
-            layer1 -= self.LEARNING_RATE * np.matmul(block.T, diff) @ layer2.T
-            layer2 -= self.LEARNING_RATE * hidden_layer.T @ diff
+            layer1 -= self.learning_rate * np.matmul(block.T, diff) @ layer2.T
+            layer2 -= self.learning_rate * hidden_layer.T @ diff
 
             self.normalize_weights(layer1)
             self.normalize_weights(layer2)
@@ -123,8 +128,8 @@ class ImageCompressor:
         return sum(((block @ layer1 @ layer2 - block) ** 2).sum() for block in self.generate_blocks())
 
     def calculate_compression_ratio(self):
-        return (self.INPUT_SIZE * self.total_blocks()) / (
-                (self.INPUT_SIZE + self.total_blocks()) * self.HIDDEN_SIZE + 2)
+        return (self.input_size * self.total_blocks()) / (
+                (self.input_size + self.total_blocks()) * self.hidden_size + 2)
 
     @staticmethod
     def mod_of_vector(vector):
@@ -132,27 +137,36 @@ class ImageCompressor:
 
     def generate_blocks(self):
         height, width = self.get_image_dimensions()
-        return self.split_into_blocks(height, width).reshape(self.total_blocks(), 1, self.INPUT_SIZE)
+        return self.split_into_blocks(height, width).reshape(self.total_blocks(), 1, self.input_size)
 
     def total_blocks(self):
         height, width = self.get_image_dimensions()
-        return (height * width) // (self.BLOCK_HEIGHT * self.BLOCK_WIDTH)
+        return (height * width) // (self.block_height * self.block_width)
 
-    def compress_image(self, block_height, block_width):
-
-        self.BLOCK_HEIGHT, self.BLOCK_WIDTH = block_height, block_width
-        self.INPUT_SIZE = self.BLOCK_HEIGHT * self.BLOCK_WIDTH * 3
-
-        height, width = self.get_image_dimensions()
+    def compress_image(self):
+        self.configure_block_parameters(self.block_height, self.block_width)
         layer1, layer2 = self.train_model()
 
         original_image = self.load_image()
-        compressed_blocks = [block @ layer1 @ layer2 for block in self.generate_blocks()]
-        compressed_image = np.clip(np.array(compressed_blocks).reshape(self.total_blocks(), self.INPUT_SIZE), -1, 1)
+        compressed_image = self.compress_and_reformat_blocks(layer1, layer2)
 
+        self.display_images(original_image, compressed_image)
+
+    def configure_block_parameters(self, block_height, block_width):
+        self.block_height = block_height
+        self.block_width = block_width
+        self.input_size = self.block_height * self.block_width * 3
+
+    def compress_and_reformat_blocks(self, layer1, layer2):
+        compressed_blocks = [block @ layer1 @ layer2 for block in self.generate_blocks()]
+        compressed_image = np.clip(np.array(compressed_blocks).reshape(self.total_blocks(), self.input_size), -1, 1)
+        return compressed_image
+
+    def display_images(self, original_image, compressed_image):
         self.display_image(original_image)
+        height, width = self.get_image_dimensions()
         self.display_image(self.blocks_to_image_array(compressed_image, height, width))
 
 
 if __name__ == '__main__':
-    ImageCompressor().compress_image(4, 4)
+    ImageCompressor().compress_image()

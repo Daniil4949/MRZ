@@ -72,7 +72,8 @@ class ImageCompressor:
         layer2 = self.normalize_layer(layer2)
         return layer1, layer2
 
-    def initialize_weights(self, input_size, hidden_size):
+    @staticmethod
+    def initialize_weights(input_size, hidden_size):
         return np.random.rand(input_size, hidden_size) * 2 - 1
 
     def normalize_layer(self, layer):

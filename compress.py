@@ -90,32 +90,41 @@ class ImageCompressor:
         layer1, layer2 = self.initialize_layers()
 
         while error > self.MAX_ERROR:
-            error = 0
+            error = self.train_epoch(layer1, layer2)
             epoch += 1
-            for block in self.generate_blocks():
-                hidden_layer = block @ layer1
-                output_layer = hidden_layer @ layer2
-                diff = output_layer - block
-                layer1 -= self.LEARNING_RATE * np.matmul(block.T, diff) @ layer2.T
-                layer2 -= self.LEARNING_RATE * hidden_layer.T @ diff
-
-                for weight_matrix1_row in range(len(layer1)):
-                    for weight_matrix1_column in range(len(layer1[weight_matrix1_row])):
-                        denominator1 = self.mod_of_vector(layer1.T[weight_matrix1_column])
-                        layer1[weight_matrix1_row][weight_matrix1_column] /= denominator1
-
-                for weight_matrix2_row in range(len(layer2)):
-                    for weight_matrix2_column in range(len(layer2[weight_matrix2_row])):
-                        denominator2 = self.mod_of_vector(layer2.T[weight_matrix2_column])
-                        layer2[weight_matrix2_row][weight_matrix2_column] /= denominator2
-
-            error = sum(((block @ layer1 @ layer2 - block) ** 2).sum() for block in self.generate_blocks())
             print(f'Epoch {epoch} - Error: {error}')
 
-        compression_ratio = (self.INPUT_SIZE * self.total_blocks()) / (
-                (self.INPUT_SIZE + self.total_blocks()) * self.HIDDEN_SIZE + 2)
+        compression_ratio = self.calculate_compression_ratio()
         print(f'Compression Ratio: {compression_ratio}')
         return layer1, layer2
+
+    def train_epoch(self, layer1, layer2):
+        """Обучение модели на одной эпохе."""
+        for block in self.generate_blocks():
+            hidden_layer = block @ layer1
+            output_layer = hidden_layer @ layer2
+            diff = output_layer - block
+            layer1 -= self.LEARNING_RATE * np.matmul(block.T, diff) @ layer2.T
+            layer2 -= self.LEARNING_RATE * hidden_layer.T @ diff
+
+            self.normalize_weights(layer1)
+            self.normalize_weights(layer2)
+
+        error = self.calculate_error(layer1, layer2)
+        return error
+
+    def normalize_weights(self, layer):
+        for weight_matrix_row in range(len(layer)):
+            for weight_matrix_column in range(len(layer[weight_matrix_row])):
+                denominator = self.mod_of_vector(layer.T[weight_matrix_column])
+                layer[weight_matrix_row][weight_matrix_column] /= denominator
+
+    def calculate_error(self, layer1, layer2):
+        return sum(((block @ layer1 @ layer2 - block) ** 2).sum() for block in self.generate_blocks())
+
+    def calculate_compression_ratio(self):
+        return (self.INPUT_SIZE * self.total_blocks()) / (
+                (self.INPUT_SIZE + self.total_blocks()) * self.HIDDEN_SIZE + 2)
 
     @staticmethod
     def mod_of_vector(vector):

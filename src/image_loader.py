@@ -8,6 +8,7 @@
 # https://numpy.org/doc/2.1/reference/index.html
 # https://matplotlib.org/stable/api/index
 # https://habr.com/ru/articles/130581/
+# https://studfile.net/preview/1557061/page:4/#9
 
 
 from matplotlib import image as mpimg

@@ -14,6 +14,20 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+class ImageLoader:
+    @staticmethod
+    def load_image(filename="mountains.png"):
+        image = mpimg.imread(filename)
+        return (2.0 * image) - 1.0
+
+    @staticmethod
+    def display_image(img_array):
+        scaled_image = 1.0 * (img_array + 1) / 2
+        plt.axis('off')
+        plt.imshow(scaled_image)
+        plt.show()
+
+
 class ImageCompressor:
 
     def __init__(self):
@@ -23,9 +37,10 @@ class ImageCompressor:
         self.block_height = 4
         self.block_width = 4
         self.input_size = self.block_height * self.block_width * 3
+        self.loader = ImageLoader()
 
     def split_into_blocks(self, height, width):
-        img = self.load_image()
+        img = self.loader.load_image()
         blocks = []
         for i in range(height // self.block_height):
             for j in range(width // self.block_width):
@@ -67,7 +82,7 @@ class ImageCompressor:
         return (2.0 * image) - 1.0
 
     def get_image_dimensions(self):
-        img = self.load_image()
+        img = self.loader.load_image()
         return img.shape[0], img.shape[1]
 
     def initialize_layers(self):
@@ -144,13 +159,14 @@ class ImageCompressor:
         return (height * width) // (self.block_height * self.block_width)
 
     def compress_image(self):
-        self.configure_block_parameters(self.block_height, self.block_width)
         layer1, layer2 = self.train_model()
 
-        original_image = self.load_image()
+        original_image = self.loader.load_image()
         compressed_image = self.compress_and_reformat_blocks(layer1, layer2)
 
-        self.display_images(original_image, compressed_image)
+        self.loader.display_image(original_image)
+        height, width = self.get_image_dimensions()
+        self.loader.display_image(self.blocks_to_image_array(compressed_image, height, width))
 
     def configure_block_parameters(self, block_height, block_width):
         self.block_height = block_height

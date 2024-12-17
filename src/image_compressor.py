@@ -34,8 +34,8 @@ class ImageCompressor:
 
     def compression_ratio(self, total_blocks):
         # Изменен расчет коэффициента сжатия
-        return (32 * self.block_height * self.block_width * total_blocks) / (
-            (self.input_size + total_blocks) * 32 * self.hidden_size + 2
+        return (24 * self.block_height * self.block_width * total_blocks) / (
+            (self.input_size + total_blocks) * 24 * self.hidden_size + 2
         )
 
     def compress_image(self):
@@ -67,8 +67,7 @@ class ImageCompressor:
         compression_ratio = self.compression_ratio(total_blocks)
 
         print(f"Compression ratio: {compression_ratio}")
-        ImageProcessor.display_image(image)
-        ImageProcessor.display_image(
+        ImageProcessor.save_image(
             ImageProcessor.blocks_to_image_array(
                 compressed_image, height, width, self.block_height, self.block_width
             )

@@ -10,6 +10,7 @@
 
 import cv2
 import numpy as np
+from PIL import Image
 from matplotlib import pyplot as plt
 
 
@@ -55,7 +56,7 @@ class ImageProcessor:
         return np.array(image_array)
 
     def get_image_dimensions(self):
-        img = self.load_image("mountains.bmp")
+        img = self.load_image("images/mountains.bmp")
         return img.shape[0], img.shape[1]
 
     def total_blocks(self, block_height, block_width):
@@ -68,3 +69,10 @@ class ImageProcessor:
         plt.axis("off")
         plt.imshow(scaled_image)
         plt.show()
+
+    @staticmethod
+    def save_image(image_array, file_path="output.bmp"):
+        image_uint8 = ((image_array + 1) * 127.5).clip(0, 255).astype(np.uint8)
+        image = Image.fromarray(image_uint8, "RGB")
+        image.save(file_path, format="BMP")
+        print(f"Изображение сохранено в {file_path}")

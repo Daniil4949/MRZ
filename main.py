@@ -12,11 +12,11 @@ from src.image_compressor import ImageCompressor
 
 if __name__ == "__main__":
     compressor = ImageCompressor(
-        image_path="mountains.bmp",
+        image_path="images/mountains.bmp",
         block_height=8,
         block_width=8,
         hidden_size=45,
-        learning_rate=0.0015,
-        max_error=2500.0,
+        learning_rate=0.0025,
+        max_error=2000,
     )
     compressor.compress_image()
